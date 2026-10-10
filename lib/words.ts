@@ -1,4 +1,8 @@
-export type GameMode = "2letter" | "3letter" | "4letter"
+import type { SentenceLevel } from "./sentences"
+
+export type GameMode = "2letter" | "3letter" | "4letter" | "ayat"
+// "kata" = flashcard practice of words missed while reading sentences (not selectable on the home screen)
+export type SessionMode = GameMode | "kata"
 export type LegacyMode = "easy" | "hard" | "custom"
 export type LetterCase = "Aa" | "aa" | "AA"
 export type StatsMode = GameMode
@@ -61,17 +65,19 @@ export const wordGroups: WordGroup[] = [
 
 export const allWordGroupIds = wordGroups.map((g) => g.id)
 
-export const modeLabels: Record<GameMode | LegacyMode, string> = {
+export const modeLabels: Record<SessionMode | LegacyMode, string> = {
   "2letter": "2 Huruf",
   "3letter": "3 Huruf",
   "4letter": "4 Huruf",
+  ayat: "Ayat",
+  kata: "Latih Perkataan",
   easy: "2 Huruf (Mudah)",
   hard: "2 Huruf (Sukar)",
   custom: "2 Huruf (Pilihan)",
 }
 
-export const toStatsMode = (mode: GameMode | LegacyMode): StatsMode =>
-  mode === "3letter" || mode === "4letter" ? mode : "2letter"
+export const toStatsMode = (mode: SessionMode | LegacyMode): StatsMode =>
+  mode === "kata" ? "ayat" : mode === "3letter" || mode === "4letter" || mode === "ayat" ? mode : "2letter"
 
 export const applyCase = (word: string, caseType: LetterCase): string => {
   if (caseType === "AA") return word.toUpperCase()
@@ -98,6 +104,9 @@ export interface GameSettings {
   vowels: string[]
   thirdLetters: string[]
   wordGroupIds: string[]
+  sentenceLevel: SentenceLevel
+  useChildName: boolean
+  pointMode: boolean
 }
 
 export const defaultSettings: GameSettings = {
@@ -108,6 +117,9 @@ export const defaultSettings: GameSettings = {
   vowels: easyVowels,
   thirdLetters: allThirdLetters,
   wordGroupIds: allWordGroupIds,
+  sentenceLevel: 1,
+  useChildName: true,
+  pointMode: false,
 }
 
 export const getWordPool = (groupIds: string[]) =>

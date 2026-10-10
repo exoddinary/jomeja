@@ -2,7 +2,8 @@
 
 import type React from "react"
 import { createContext, useState, useEffect, useContext, useCallback } from "react"
-import type { GameMode, LegacyMode, StatsMode } from "@/lib/words"
+import type { LegacyMode, SessionMode, StatsMode } from "@/lib/words"
+import type { WordMark } from "@/lib/sentences"
 
 // Define interfaces for data structures
 export interface CardResult {
@@ -10,6 +11,7 @@ export interface CardResult {
   correct: boolean
   timeSpent: number
   marks: number
+  words?: WordMark[] // per-word marks for sentence reading
 }
 
 export interface GameResult {
@@ -18,8 +20,10 @@ export interface GameResult {
   duration: number
   correct: number
   wrong: number
-  mode: GameMode | LegacyMode
+  mode: SessionMode | LegacyMode
   totalWords: number
+  helped?: number // words read with help (sentence mode)
+  level?: number // sentence level
   totalMarks: number
   cardResults: CardResult[]
 }

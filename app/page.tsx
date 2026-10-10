@@ -9,6 +9,7 @@ import { BarChart3, ChevronDown, Play, RotateCcw, SlidersHorizontal, User, X } f
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import FirstTimeModal from "@/components/first-time-modal"
+import SentenceCard from "@/components/sentence-card"
 import { useProfile, type AllLetterStats, type CardResult, type GameResult } from "@/context/profile-context"
 import {
   allConsonants,
@@ -25,8 +26,17 @@ import {
   type GameMode,
   type GameSettings,
   type LetterCase,
+  type SessionMode,
   type StatsMode,
 } from "@/lib/words"
+import {
+  generateSentences,
+  readingLevel,
+  sentenceLevels,
+  sentenceWords,
+  type SentenceLevel,
+  type WordMark,
+} from "@/lib/sentences"
 
 const SETTINGS_KEY = "jom-eja-settings"
 const shadow = "shadow-[6px_6px_0px_0px_rgba(30,41,59,1)]"
@@ -63,15 +73,24 @@ const levels: { mode: GameMode; title: string; sample: string; description: stri
     title: "4 Huruf",
     sample: "buku · syok",
     description: "Perkataan sebenar yang biasa didengar di Malaysia, termasuk ng, ny, sy dan kh.",
+  },
+  {
+    mode: "ayat",
+    title: "Ayat",
+    sample: "Adik makan roti.",
+    description: "Baca ayat pendek. Ketik perkataan yang salah sahaja.",
     isNew: true,
   },
 ]
 
 interface Session {
-  words: string[]
+  mode: SessionMode
+  level: SentenceLevel
+  words: string[] // flashcard words, or sentences in "ayat" mode
   index: number
   correct: number
   wrong: number
+  helped: number
   streak: number
   wrongStreak: number
   totalMarks: number
@@ -159,6 +178,30 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
       }`}
     >
       {children}
+    </button>
+  )
+}
+
+function Toggle({ checked, onChange, label, hint }: { checked: boolean; onChange: (v: boolean) => void; label: string; hint: string }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className="w-full flex items-center gap-3 text-left touch-manipulation"
+    >
+      <span className="flex-1">
+        <span className="block font-black text-slate-800">{label}</span>
+        <span className="block text-xs text-slate-500">{hint}</span>
+      </span>
+      <span
+        className={`w-14 h-8 shrink-0 rounded-full border-4 border-slate-800 relative transition-colors ${checked ? "bg-emerald-400" : "bg-slate-200"}`}
+      >
+        <span
+          className={`absolute top-0.5 w-5 h-5 rounded-full bg-white border-2 border-slate-800 transition-all ${checked ? "left-6" : "left-0.5"}`}
+        />
+      </span>
     </button>
   )
 }
@@ -256,14 +299,25 @@ export default function JomEja() {
 
   const update = (patch: Partial<GameSettings>) => setSettings((s) => ({ ...s, ...patch }))
 
-  const startGame = (words?: string[]) => {
+  const startGame = (words?: string[], mode: SessionMode = settings.mode, sentenceLevel = settings.sentenceLevel) => {
     if (!currentProfile) return router.push("/profile")
     clearTimeout(characterTimeout.current)
     setSession({
-      words: words ?? generateWords(settings),
+      mode,
+      level: sentenceLevel,
+      words:
+        words ??
+        (mode === "ayat"
+          ? generateSentences(
+              sentenceLevel,
+              settings.wordsPerSession,
+              settings.useChildName ? currentProfile.name : undefined,
+            )
+          : generateWords(settings)),
       index: 0,
       correct: 0,
       wrong: 0,
+      helped: 0,
       streak: 0,
       wrongStreak: 0,
       totalMarks: 0,
@@ -286,27 +340,26 @@ export default function JomEja() {
     setScreen("home")
   }
 
-  const handleAnswer = (isCorrect: boolean) => {
-    if (!session || !currentProfile || !cardStart || character) return
-
-    const timeSpent = Date.now() - cardStart
-    const marks = isCorrect ? calculateMarks(timeSpent) : 0
-    playSound(isCorrect)
-
-    const cardResults = [
-      ...session.cardResults,
-      { syllable: session.words[session.index], correct: isCorrect, timeSpent, marks },
-    ]
-    const next: Session = { ...session, cardResults, index: session.index + 1, totalMarks: session.totalMarks + marks }
+  // Shared by flashcards and sentences: stores the card, updates streaks, finishes the session
+  const recordCard = (card: CardResult, counts: { correct: number; wrong: number; helped: number }) => {
+    if (!session || !currentProfile) return
+    const cardResults = [...session.cardResults, card]
+    const next: Session = {
+      ...session,
+      cardResults,
+      index: session.index + 1,
+      totalMarks: session.totalMarks + card.marks,
+      correct: session.correct + counts.correct,
+      wrong: session.wrong + counts.wrong,
+      helped: session.helped + counts.helped,
+    }
     let celebrate: CharacterType | null = null
 
-    if (isCorrect) {
-      next.correct++
+    if (card.correct) {
       next.streak++
       next.wrongStreak = 0
       celebrate = streakCharacters[next.streak] ?? null
     } else {
-      next.wrong++
       next.streak = 0
       next.wrongStreak++
       // Show sad character after 3 wrong answers in a row
@@ -327,14 +380,17 @@ export default function JomEja() {
         duration: Math.round((Date.now() - next.startTime) / 1000),
         correct: next.correct,
         wrong: next.wrong,
-        mode: settings.mode,
-        totalWords: next.words.length,
+        helped: next.helped,
+        mode: next.mode,
+        level: next.mode === "ayat" ? next.level : undefined,
+        totalWords: next.correct + next.wrong + next.helped,
         totalMarks: next.totalMarks,
         cardResults,
       }
+      const isFlashcard = next.mode !== "ayat" && next.mode !== "kata"
       updateCurrentProfileStats(
         [...currentProfile.results, result],
-        mergeLetterStats(currentProfile.letterStats, settings.mode, cardResults),
+        isFlashcard ? mergeLetterStats(currentProfile.letterStats, next.mode as StatsMode, cardResults) : currentProfile.letterStats,
       )
       setLastResult(result)
       setCardStart(0)
@@ -356,6 +412,34 @@ export default function JomEja() {
       setCardStart(Date.now())
       setElapsed(0)
     }
+  }
+
+  const handleAnswer = (isCorrect: boolean) => {
+    if (!session || !cardStart || character || session.mode === "ayat") return
+    const timeSpent = Date.now() - cardStart
+    playSound(isCorrect)
+    recordCard(
+      { syllable: session.words[session.index], correct: isCorrect, timeSpent, marks: isCorrect ? calculateMarks(timeSpent) : 0 },
+      { correct: isCorrect ? 1 : 0, wrong: isCorrect ? 0 : 1, helped: 0 },
+    )
+  }
+
+  const handleSentence = (words: WordMark[]) => {
+    if (!session || !cardStart || character) return
+    const correct = words.filter((w) => w.mark === "betul").length
+    const wrong = words.filter((w) => w.mark === "salah").length
+    const helped = words.length - correct - wrong
+    playSound(wrong === 0)
+    recordCard(
+      {
+        syllable: session.words[session.index],
+        correct: correct === words.length,
+        timeSpent: Date.now() - cardStart,
+        marks: correct === words.length ? 3 : wrong === 0 ? 2 : correct > 0 ? 1 : 0,
+        words,
+      },
+      { correct, wrong, helped },
+    )
   }
 
   // Keyboard shortcuts for desktop: ← wrong, → correct
@@ -388,13 +472,37 @@ export default function JomEja() {
 
   const level = levels.find((l) => l.mode === settings.mode)!
   const wordPool = getWordPool(settings.wordGroupIds)
-  const advancedSummary =
-    settings.mode === "4letter"
+  const isAyat = settings.mode === "ayat"
+  const sentenceLevel = sentenceLevels.find((l) => l.level === settings.sentenceLevel)!
+  const advancedSummary = isAyat
+    ? [settings.useChildName && `Nama ${currentProfile?.name}`, settings.pointMode ? "Mod Tunjuk" : "Ketik yang salah"]
+        .filter(Boolean)
+        .join(" · ")
+    : settings.mode === "4letter"
       ? `${settings.wordGroupIds.length} kumpulan · ${wordPool.length} perkataan`
       : `Vokal: ${settings.vowels.map((v) => v.toLowerCase()).join(", ")} · ${settings.consonants.length} konsonan` +
         (settings.mode === "3letter" ? ` · ${settings.thirdLetters.length} huruf akhir` : "")
   const currentWord = session?.words[session.index]
-  const wrongWords = lastResult?.cardResults.filter((c) => !c.correct).map((c) => c.syllable) ?? []
+  const isAyatResult = lastResult?.mode === "ayat"
+  const wrongWords = isAyatResult
+    ? [
+        ...new Map(
+          lastResult.cardResults
+            .flatMap((c) => c.words ?? [])
+            .filter((w) => w.mark !== "betul")
+            .map((w) => [w.word.toLowerCase(), w.word] as const),
+        ).values(),
+      ]
+    : (lastResult?.cardResults.filter((c) => !c.correct).map((c) => c.syllable) ?? [])
+  const accuracy = lastResult && lastResult.totalWords ? lastResult.correct / lastResult.totalWords : 0
+  const lastReadingLevel = readingLevel(accuracy)
+  const readingMinutes = (lastResult?.cardResults.reduce((sum, c) => sum + c.timeSpent, 0) ?? 0) / 60000
+  const wordsPerMinute = readingMinutes > 0 ? Math.round((lastResult?.totalWords ?? 0) / readingMinutes) : 0
+  const lastLevel = (lastResult?.level ?? 1) as SentenceLevel
+  const startAtLevel = (level: SentenceLevel) => {
+    update({ sentenceLevel: level })
+    startGame(undefined, "ayat", level)
+  }
 
   return (
     <div className={pageClass}>
@@ -425,7 +533,7 @@ export default function JomEja() {
         <div className="space-y-5 relative z-10">
           <Card className={`bg-white border-4 border-slate-800 p-4 ${shadow}`}>
             <h2 className="text-lg font-black mb-3 text-slate-800">1. Pilih tahap</h2>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {levels.map((l) => (
                 <button
                   key={l.mode}
@@ -454,20 +562,32 @@ export default function JomEja() {
           <Card className={`bg-purple-200 border-4 border-slate-800 p-4 ${shadow}`}>
             <h2 className="text-lg font-black mb-3 text-slate-800">2. Tetapan</h2>
             <div className="space-y-4">
+              {isAyat ? (
+                <div>
+                  <div className="font-black text-slate-800 mb-2">Tahap ayat</div>
+                  <Segmented<SentenceLevel>
+                    value={settings.sentenceLevel}
+                    onChange={(sentenceLevel) => update({ sentenceLevel })}
+                    options={sentenceLevels.map((l) => ({ value: l.level, label: l.title }))}
+                  />
+                  <p className="text-xs text-slate-600 mt-2">{sentenceLevel.description}</p>
+                </div>
+              ) : (
+                <div>
+                  <div className="font-black text-slate-800 mb-2">Bentuk huruf</div>
+                  <Segmented<LetterCase>
+                    value={settings.letterCase}
+                    onChange={(letterCase) => update({ letterCase })}
+                    options={[
+                      { value: "Aa", label: "Ma" },
+                      { value: "aa", label: "ma" },
+                      { value: "AA", label: "MA" },
+                    ]}
+                  />
+                </div>
+              )}
               <div>
-                <div className="font-black text-slate-800 mb-2">Bentuk huruf</div>
-                <Segmented<LetterCase>
-                  value={settings.letterCase}
-                  onChange={(letterCase) => update({ letterCase })}
-                  options={[
-                    { value: "Aa", label: "Ma" },
-                    { value: "aa", label: "ma" },
-                    { value: "AA", label: "MA" },
-                  ]}
-                />
-              </div>
-              <div>
-                <div className="font-black text-slate-800 mb-2">Bilangan kad</div>
+                <div className="font-black text-slate-800 mb-2">{isAyat ? "Bilangan ayat" : "Bilangan kad"}</div>
                 <Segmented<number>
                   value={settings.wordsPerSession}
                   onChange={(wordsPerSession) => update({ wordsPerSession })}
@@ -489,7 +609,11 @@ export default function JomEja() {
                   <SlidersHorizontal className="w-5 h-5 shrink-0" />
                   <span className="flex-1">
                     <span className="block font-black text-slate-800">
-                      {settings.mode === "4letter" ? "Pilih kumpulan perkataan" : "Pilih huruf sendiri"}
+                      {isAyat
+                        ? "Pilihan bacaan"
+                        : settings.mode === "4letter"
+                          ? "Pilih kumpulan perkataan"
+                          : "Pilih huruf sendiri"}
                     </span>
                     <span className="block text-xs text-slate-500">{advancedSummary}</span>
                   </span>
@@ -498,7 +622,22 @@ export default function JomEja() {
 
                 {showAdvanced && (
                   <div className="border-t-4 border-slate-800 p-3 space-y-4">
-                    {settings.mode === "4letter" ? (
+                    {isAyat ? (
+                      <>
+                        <Toggle
+                          checked={settings.useChildName}
+                          onChange={(useChildName) => update({ useChildName })}
+                          label={`Guna nama "${currentProfile.name}"`}
+                          hint={`Cth: ${currentProfile.name} makan roti.`}
+                        />
+                        <Toggle
+                          checked={settings.pointMode}
+                          onChange={(pointMode) => update({ pointMode })}
+                          label="Mod Tunjuk"
+                          hint="Satu perkataan bercahaya pada satu masa. Bagus untuk pembaca baru."
+                        />
+                      </>
+                    ) : settings.mode === "4letter" ? (
                       <div className="space-y-2">
                         {wordGroups.map((g) => {
                           const active = settings.wordGroupIds.includes(g.id)
@@ -571,9 +710,9 @@ export default function JomEja() {
           </Card>
 
           <div className="text-center">
-            <p className="text-sm text-slate-600 mb-2">Contoh kad:</p>
+            <p className="text-sm text-slate-600 mb-2">{isAyat ? "Contoh ayat:" : "Contoh kad:"}</p>
             <div className="flex justify-center gap-2 mb-4">
-              {getExamples(settings).map((e, i) => (
+              {(isAyat ? [sentenceLevel.example] : getExamples(settings)).map((e, i) => (
                 <span
                   key={i}
                   className="font-handwriting text-3xl text-slate-800 bg-white border-2 border-slate-800 rounded-md px-3 py-1"
@@ -605,8 +744,27 @@ export default function JomEja() {
         </div>
       )}
 
+      {/* Sentence reading */}
+      {screen === "play" && session?.mode === "ayat" && currentWord && !character && (
+        <div className="text-center relative z-10">
+          <div className="flex justify-between items-center text-lg font-black text-slate-800 mb-2">
+            <span>
+              Ayat {session.index + 1} / {session.words.length}
+            </span>
+            <span className="text-sm text-slate-600">Tahap {session.level}</span>
+          </div>
+          <div className="h-4 bg-white border-4 border-slate-800 rounded-full overflow-hidden mb-6">
+            <div
+              className="h-full bg-emerald-400 transition-all duration-300"
+              style={{ width: `${(session.index / session.words.length) * 100}%` }}
+            />
+          </div>
+          <SentenceCard key={session.index} sentence={currentWord} pointMode={settings.pointMode} onSubmit={handleSentence} />
+        </div>
+      )}
+
       {/* Flashcard */}
-      {screen === "play" && session && currentWord && !character && (
+      {screen === "play" && session && session.mode !== "ayat" && currentWord && !character && (
         <div className="text-center relative z-10">
           <div className="flex justify-between items-center text-lg font-black text-slate-800 mb-2">
             <span>
@@ -629,7 +787,11 @@ export default function JomEja() {
             >
               ⏱️ {elapsed}s
             </div>
-            <div className="text-8xl font-black text-slate-800 font-handwriting break-all">{currentWord}</div>
+            <div
+              className={`${currentWord.length > 5 ? "text-6xl" : "text-8xl"} font-black text-slate-800 font-handwriting break-words`}
+            >
+              {currentWord}
+            </div>
           </Card>
 
           <p className="text-sm text-slate-600 mb-4 h-5">
@@ -659,6 +821,27 @@ export default function JomEja() {
       {/* Results */}
       {screen === "results" && lastResult && (
         <div className="space-y-5 relative z-10">
+          {isAyatResult ? (
+            <Card className={`bg-white border-4 border-slate-800 p-6 text-center ${shadow}`}>
+              <div className="text-6xl mb-2">{accuracy >= 0.9 ? "🏆" : "💪"}</div>
+              <h2 className="text-2xl font-black text-slate-800">
+                {accuracy >= 0.9 ? `Syabas, ${currentProfile?.name}!` : "Bagus, teruskan berlatih!"}
+              </h2>
+              <div className="text-5xl font-black text-slate-800 mt-4">{Math.round(accuracy * 100)}%</div>
+              <p className="text-slate-600 mb-3">
+                {lastResult.correct} / {lastResult.totalWords} perkataan dibaca betul
+              </p>
+              <div className={`inline-block px-3 py-1 rounded-md border-2 border-slate-800 font-black ${lastReadingLevel.color}`}>
+                Tahap {lastLevel}: {lastReadingLevel.label}
+              </div>
+              <p className="text-sm text-slate-600 mt-2">{lastReadingLevel.advice}</p>
+              <div className="flex justify-center flex-wrap gap-x-5 gap-y-1 text-slate-700 mt-3 text-sm">
+                <span>⭐ {lastResult.totalMarks}</span>
+                <span>📖 ~{wordsPerMinute} perkataan/minit</span>
+                {!!lastResult.helped && <span>🤝 {lastResult.helped} dibantu</span>}
+              </div>
+            </Card>
+          ) : (
           <Card className={`bg-white border-4 border-slate-800 p-6 text-center ${shadow}`}>
             <div className="text-6xl mb-2">{lastResult.correct >= lastResult.totalWords * 0.8 ? "🏆" : "💪"}</div>
             <h2 className="text-2xl font-black text-slate-800">
@@ -676,14 +859,32 @@ export default function JomEja() {
             </div>
             <p className="text-xs text-slate-500 mt-2">{modeLabels[lastResult.mode]}</p>
           </Card>
+          )}
 
           <div className="space-y-3">
+            {isAyatResult && accuracy >= 0.95 && lastLevel < 4 && (
+              <Button
+                onClick={() => startAtLevel((lastLevel + 1) as SentenceLevel)}
+                className={`w-full h-auto bg-emerald-300 text-slate-800 border-4 border-slate-800 hover:bg-emerald-400 font-black text-xl py-4 ${shadow} touch-manipulation select-none`}
+              >
+                ⬆️ Naik ke Tahap {lastLevel + 1}
+              </Button>
+            )}
+            {isAyatResult && accuracy < 0.9 && lastLevel > 1 && (
+              <Button
+                onClick={() => startAtLevel((lastLevel - 1) as SentenceLevel)}
+                className={`w-full h-auto bg-white text-slate-800 border-4 border-slate-800 hover:bg-rose-50 font-black text-xl py-4 ${shadow} touch-manipulation select-none`}
+              >
+                ⬇️ Cuba Tahap {lastLevel - 1}
+              </Button>
+            )}
             {wrongWords.length > 0 && (
               <Button
-                onClick={() => startGame(wrongWords)}
+                onClick={() => startGame(wrongWords, isAyatResult ? "kata" : (lastResult.mode as SessionMode))}
                 className={`w-full h-auto bg-yellow-300 text-slate-800 border-4 border-slate-800 hover:bg-yellow-400 active:bg-yellow-500 font-black text-xl py-4 ${shadow} touch-manipulation select-none`}
               >
-                <RotateCcw className="w-6 h-6 mr-2" /> Ulang {wrongWords.length} kad yang salah
+                <RotateCcw className="w-6 h-6 mr-2" />
+                {isAyatResult ? `Latih ${wrongWords.length} perkataan yang salah` : `Ulang ${wrongWords.length} kad yang salah`}
               </Button>
             )}
             <Button
@@ -708,6 +909,43 @@ export default function JomEja() {
             </div>
           </div>
 
+          {isAyatResult ? (
+            <Card className={`bg-blue-100 border-4 border-slate-800 p-4 ${shadow}`}>
+              <h3 className="text-lg font-black mb-3 text-slate-800">Butiran Ayat</h3>
+              <div className="space-y-2">
+                {lastResult.cardResults.map((card, index) => (
+                  <div key={index} className="bg-white p-2 border-2 border-slate-800 rounded">
+                    <div className="flex flex-wrap gap-1 text-lg">
+                      {(card.words ?? sentenceWords(card.syllable).map((word) => ({ word, mark: "betul" as const }))).map(
+                        (w, i) => (
+                          <span
+                            key={i}
+                            className={`px-1.5 rounded ${
+                              w.mark === "salah"
+                                ? "bg-rose-300 line-through decoration-rose-700"
+                                : w.mark === "bantu"
+                                  ? "bg-yellow-200"
+                                  : ""
+                            }`}
+                          >
+                            {w.word}
+                          </span>
+                        ),
+                      )}
+                    </div>
+                    <div className="flex justify-between text-xs text-slate-600 mt-1">
+                      <span>{(card.timeSpent / 1000).toFixed(1)}s</span>
+                      <span>{"⭐".repeat(card.marks)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-slate-600 mt-3">
+                <span className="bg-rose-300 px-1 rounded">salah</span> ·{" "}
+                <span className="bg-yellow-200 px-1 rounded">dibantu</span>
+              </p>
+            </Card>
+          ) : (
           <Card className={`bg-blue-100 border-4 border-slate-800 p-4 ${shadow}`}>
             <h3 className="text-lg font-black mb-3 text-slate-800">Butiran Kad</h3>
             <div className="grid grid-cols-2 gap-2">
@@ -725,6 +963,7 @@ export default function JomEja() {
               ))}
             </div>
           </Card>
+          )}
         </div>
       )}
 

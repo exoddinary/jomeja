@@ -8,11 +8,13 @@ import Link from "next/link"
 import { useRouter } from "next/navigation" // Import useRouter
 import { useProfile } from "@/context/profile-context" // Import useProfile hook
 import { allConsonants, allVowels, toStatsMode, type StatsMode } from "@/lib/words"
+import { readingLevel } from "@/lib/sentences"
 
 const tabs: { value: StatsMode; label: string }[] = [
   { value: "2letter", label: "2 Huruf" },
   { value: "3letter", label: "3 Huruf" },
   { value: "4letter", label: "4 Huruf" },
+  { value: "ayat", label: "Ayat" },
 ]
 
 export default function StatisticsPage() {
@@ -54,8 +56,14 @@ export default function StatisticsPage() {
   currentProfile.results
     .filter((r) => toStatsMode(r.mode) === currentStatsTab)
     .flatMap((r) => r.cardResults)
+    // Sentence cards are split into their individual word marks
+    .flatMap((c) =>
+      c.words
+        ? c.words.map((w) => ({ word: w.word, correct: w.mark === "betul", timeSpent: c.timeSpent / c.words!.length }))
+        : [{ word: c.syllable, correct: c.correct, timeSpent: c.timeSpent }],
+    )
     .forEach((c) => {
-      const word = c.syllable.toLowerCase()
+      const word = c.word.toLowerCase()
       const prev = wordStats.get(word) ?? { word, count: 0, wrong: 0, totalTime: 0 }
       wordStats.set(word, {
         word,
@@ -69,6 +77,26 @@ export default function StatisticsPage() {
     .sort((a, b) => b.wrong / b.count - a.wrong / a.count || b.totalTime / b.count - a.totalTime / a.count)
     .slice(0, 6)
   const sessionCount = currentProfile.results.filter((r) => toStatsMode(r.mode) === currentStatsTab).length
+
+  // Sentence reading history (newest first)
+  const readingSessions = currentProfile.results
+    .filter((r) => r.mode === "ayat" && r.totalWords > 0)
+    .map((r) => {
+      const minutes = r.cardResults.reduce((sum, c) => sum + c.timeSpent, 0) / 60000
+      return {
+        ...r,
+        accuracy: r.correct / r.totalWords,
+        wordsPerMinute: minutes > 0 ? Math.round(r.totalWords / minutes) : 0,
+      }
+    })
+    .reverse()
+  const recentSessions = readingSessions.slice(0, 8)
+  const averageAccuracy = recentSessions.length
+    ? recentSessions.reduce((sum, r) => sum + r.accuracy, 0) / recentSessions.length
+    : 0
+  const averageWpm = recentSessions.length
+    ? Math.round(recentSessions.reduce((sum, r) => sum + r.wordsPerMinute, 0) / recentSessions.length)
+    : 0
 
   const clearAllRecords = () => {
     if (window.confirm(`Padam semua rekod untuk ${currentProfile.name}? Tindakan ini tidak boleh dibatalkan.`)) {
@@ -131,7 +159,7 @@ export default function StatisticsPage() {
             type="button"
             onClick={() => setCurrentStatsTab(t.value)}
             aria-pressed={currentStatsTab === t.value}
-            className={`flex-1 py-2 font-black text-lg border-r-4 last:border-r-0 border-slate-800 touch-manipulation select-none ${
+            className={`flex-1 py-2 font-black text-base border-r-4 last:border-r-0 border-slate-800 touch-manipulation select-none ${
               currentStatsTab === t.value ? "bg-slate-800 text-white" : "bg-white text-slate-800 hover:bg-rose-50"
             }`}
           >
@@ -143,10 +171,61 @@ export default function StatisticsPage() {
         {currentProfile.name} · {sessionCount} sesi direkodkan
       </p>
 
+      {/* Sentence reading progress */}
+      {currentStatsTab === "ayat" && (
+        <Card className="bg-green-200 border-4 border-slate-800 p-4 mb-6 shadow-[8px_8px_0px_0px_rgba(30,41,59,1)] relative z-10">
+          <h2 className="text-xl font-black mb-3 text-slate-800">Kemajuan Membaca</h2>
+          {recentSessions.length > 0 ? (
+            <>
+              <div className="grid grid-cols-2 gap-3 text-center mb-4">
+                <div className="bg-white border-2 border-slate-800 rounded p-2">
+                  <div className="text-3xl font-black text-slate-800">{Math.round(averageAccuracy * 100)}%</div>
+                  <div className="text-xs text-slate-600">Purata ketepatan</div>
+                  <div
+                    className={`inline-block mt-1 px-2 rounded border border-slate-800 text-xs ${readingLevel(averageAccuracy).color}`}
+                  >
+                    {readingLevel(averageAccuracy).label}
+                  </div>
+                </div>
+                <div className="bg-white border-2 border-slate-800 rounded p-2">
+                  <div className="text-3xl font-black text-slate-800">~{averageWpm}</div>
+                  <div className="text-xs text-slate-600">Perkataan seminit</div>
+                </div>
+              </div>
+              <p className="text-xs text-slate-600 mb-2">Sesi terkini</p>
+              <div className="space-y-1.5">
+                {recentSessions.map((r, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs">
+                    <span className="w-20 shrink-0 text-slate-600">{r.date}</span>
+                    <span className="w-8 shrink-0 text-slate-800">T{r.level ?? 1}</span>
+                    <div className="flex-1 bg-white border-2 border-slate-800 h-6 relative overflow-hidden rounded">
+                      <div
+                        className={`h-full ${readingLevel(r.accuracy).color}`}
+                        style={{ width: `${Math.max(r.accuracy * 100, 4)}%` }}
+                      />
+                      <span className="absolute inset-0 flex items-center justify-center font-black text-slate-800">
+                        {Math.round(r.accuracy * 100)}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-slate-600 mt-3">
+                <b>Panduan:</b> ≥95% mudah (naik tahap) · 90–94% sesuai · &lt;90% sukar (latih perkataan dahulu).
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-slate-600">Belum ada sesi ayat. Pilih &quot;Ayat&quot; di halaman utama.</p>
+          )}
+        </Card>
+      )}
+
       {/* Hardest Words */}
       <Card className="bg-white border-4 border-slate-800 p-4 mb-6 shadow-[8px_8px_0px_0px_rgba(30,41,59,1)] relative z-10">
         <h2 className="text-xl font-black mb-1 text-slate-800">Perlu Diulang</h2>
-        <p className="text-xs text-slate-600 mb-3">Kad yang paling kerap salah</p>
+        <p className="text-xs text-slate-600 mb-3">
+          {currentStatsTab === "ayat" ? "Perkataan yang paling kerap salah atau dibantu" : "Kad yang paling kerap salah"}
+        </p>
         {hardestWords.length > 0 ? (
           <div className="grid grid-cols-3 gap-2">
             {hardestWords.map((w) => (
@@ -165,6 +244,8 @@ export default function StatisticsPage() {
         )}
       </Card>
 
+      {currentStatsTab !== "ayat" && (
+        <>
       {/* Consonants Chart */}
       <Card className="bg-blue-200 border-4 border-slate-800 p-4 mb-6 shadow-[8px_8px_0px_0px_rgba(30,41,59,1)] relative z-10">
         <h2 className="text-xl font-black mb-4 text-slate-800">Konsonan (Purata Masa)</h2>
@@ -411,6 +492,9 @@ export default function StatisticsPage() {
           Latih huruf-huruf ini untuk penambahbaikan yang berkesan.
         </div>
       </Card>
+
+        </>
+      )}
 
       {/* Back Button */}
       <div className="text-center relative z-10 pb-8 space-y-4">

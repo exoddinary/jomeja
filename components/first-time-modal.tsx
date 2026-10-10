@@ -170,7 +170,7 @@ export default function FirstTimeModal({ isOpen, onClose, onComplete }: FirstTim
                 <div className="bg-purple-100 border-2 border-slate-800 p-3 rounded">
                   <h4 className="font-black text-slate-800 mb-1">Tahap:</h4>
                   <p className="text-sm font-bold text-slate-600">
-                    2 Huruf (ba, ki), 3 Huruf (man, kah) atau 4 Huruf — perkataan sebenar seperti buku, yang, syok
+                    2 Huruf (ba, ki), 3 Huruf (man, kah), 4 Huruf (buku, syok) atau Ayat (Adik makan roti.)
                   </p>
                 </div>
 
