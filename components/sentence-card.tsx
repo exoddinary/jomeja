@@ -17,15 +17,31 @@ const markStyle: Record<WordMarkType, string> = {
 }
 const markBadge: Record<WordMarkType, string | null> = { betul: null, salah: "❌", bantu: "🤝" }
 
+const malayLabels = {
+  pointHint: "Anak baca perkataan yang bercahaya, kemudian tekan:",
+  help: "🤝 Pecah",
+  wrong: "❌ Salah",
+  right: "✅ Betul",
+  undo: "← Undur satu perkataan",
+  tapHint: "Ketik perkataan yang salah. Tekan lama untuk pecah suku kata.",
+  marked: (wrong: number, helped: number) => `${wrong} salah · ${helped} dibantu · ketik lagi untuk tukar`,
+  allRight: "✅ Semua betul · Seterusnya",
+  next: "Seterusnya →",
+}
+export type SentenceCardLabels = typeof malayLabels
+
 interface SentenceCardProps {
   sentence: string
   pointMode: boolean
   onSubmit: (marks: WordMark[]) => void
+  labels?: SentenceCardLabels
+  // When set, "help" plays/announces the word instead of splitting it into Malay syllables
+  onHelp?: (word: string) => void
 }
 
 // Parent marks a read-aloud sentence. Default mode: every word starts correct, tap only mistakes.
 // Tunjuk mode: one word is highlighted at a time and the parent marks it to move on.
-export default function SentenceCard({ sentence, pointMode, onSubmit }: SentenceCardProps) {
+export default function SentenceCard({ sentence, pointMode, onSubmit, labels = malayLabels, onHelp }: SentenceCardProps) {
   const words = sentenceWords(sentence)
   const [marks, setMarks] = useState<WordMarkType[]>(() => words.map(() => "betul"))
   const [split, setSplit] = useState<boolean[]>(() => words.map(() => false))
@@ -34,7 +50,10 @@ export default function SentenceCard({ sentence, pointMode, onSubmit }: Sentence
   const longPressed = useRef(false)
 
   const setMark = (i: number, mark: WordMarkType) => setMarks((prev) => prev.map((m, j) => (j === i ? mark : m)))
-  const showSyllables = (i: number) => setSplit((prev) => prev.map((s, j) => j === i || s))
+  const showSyllables = (i: number) => {
+    onHelp?.(words[i])
+    setSplit((prev) => prev.map((s, j) => j === i || s))
+  }
   const submit = (finalMarks: WordMarkType[]) => onSubmit(words.map((word, i) => ({ word, mark: finalMarks[i] })))
 
   // Long-press splits the word into syllables as a hint and marks it as "dibantu"
@@ -95,7 +114,7 @@ export default function SentenceCard({ sentence, pointMode, onSubmit }: Sentence
                       : "bg-white border-transparent"
                 } ${pointMode && !showMark && !isCurrent ? "text-slate-400" : ""}`}
               >
-                {split[i] ? syllabify(word).join("·") : word}
+                {split[i] && !onHelp ? syllabify(word).join("·") : word}
                 {i === words.length - 1 && "."}
                 {badge && <span className="absolute -top-4 -right-2 text-lg no-underline">{badge}</span>}
               </button>
@@ -106,26 +125,26 @@ export default function SentenceCard({ sentence, pointMode, onSubmit }: Sentence
 
       {pointMode ? (
         <>
-          <p className="text-sm text-slate-600 mb-4 h-5">Anak baca perkataan yang bercahaya, kemudian tekan:</p>
+          <p className="text-sm text-slate-600 mb-4 h-5">{labels.pointHint}</p>
           <div className="grid grid-cols-3 gap-3">
             <Button
               onClick={() => showSyllables(pointer)}
-              disabled={split[pointer]}
+              disabled={split[pointer] && !onHelp}
               className={`h-auto bg-yellow-200 text-slate-800 border-4 border-slate-800 hover:bg-yellow-300 font-black text-lg py-5 ${shadow} touch-manipulation select-none`}
             >
-              🤝 Pecah
+              {labels.help}
             </Button>
             <Button
               onClick={() => markCurrent("salah")}
               className={`h-auto bg-rose-300 text-slate-800 border-4 border-slate-800 hover:bg-rose-400 font-black text-lg py-5 ${shadow} touch-manipulation select-none`}
             >
-              ❌ Salah
+              {labels.wrong}
             </Button>
             <Button
               onClick={() => markCurrent("betul")}
               className={`h-auto bg-emerald-300 text-slate-800 border-4 border-slate-800 hover:bg-emerald-400 font-black text-lg py-5 ${shadow} touch-manipulation select-none`}
             >
-              ✅ Betul
+              {labels.right}
             </Button>
           </div>
           {pointer > 0 && (
@@ -134,7 +153,7 @@ export default function SentenceCard({ sentence, pointMode, onSubmit }: Sentence
               onClick={() => setPointer(pointer - 1)}
               className="mt-4 text-sm font-black text-slate-600 underline underline-offset-4"
             >
-              ← Undur satu perkataan
+              {labels.undo}
             </button>
           )}
         </>
@@ -142,8 +161,8 @@ export default function SentenceCard({ sentence, pointMode, onSubmit }: Sentence
         <>
           <p className="text-sm text-slate-600 mb-4">
             {wrong + helped > 0
-              ? `${wrong} salah · ${helped} dibantu · ketik lagi untuk tukar`
-              : "Ketik perkataan yang salah. Tekan lama untuk pecah suku kata."}
+              ? labels.marked(wrong, helped)
+              : labels.tapHint}
           </p>
           <Button
             onClick={() => submit(marks)}
@@ -151,7 +170,7 @@ export default function SentenceCard({ sentence, pointMode, onSubmit }: Sentence
               wrong + helped === 0 ? "bg-emerald-300 hover:bg-emerald-400" : "bg-blue-300 hover:bg-blue-400"
             } text-slate-800 border-4 border-slate-800 font-black text-xl py-5 ${shadow} touch-manipulation select-none`}
           >
-            {wrong + helped === 0 ? "✅ Semua betul · Seterusnya" : "Seterusnya →"}
+            {wrong + helped === 0 ? labels.allRight : labels.next}
           </Button>
         </>
       )}

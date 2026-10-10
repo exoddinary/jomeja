@@ -144,7 +144,7 @@ export default function StatisticsPage() {
       {/* Header */}
       <div className="flex justify-between items-center mb-6 relative z-10">
         <h1 className="text-2xl font-black text-slate-800">📊 Statistik Jom Eja</h1>
-        <Link href="/">
+        <Link href="/bm">
           <Button className="bg-slate-800 text-rose-100 border-4 border-slate-800 hover:bg-slate-700 active:bg-slate-900 font-black text-lg px-4 py-2 touch-manipulation select-none">
             <ArrowLeft className="w-6 h-6" />
           </Button>
@@ -498,7 +498,7 @@ export default function StatisticsPage() {
 
       {/* Back Button */}
       <div className="text-center relative z-10 pb-8 space-y-4">
-        <Link href="/">
+        <Link href="/bm">
           <Button className="bg-slate-300 text-slate-800 border-4 border-slate-800 hover:bg-slate-400 active:bg-slate-500 font-black text-xl px-8 py-4 shadow-[4px_4px_0px_0px_rgba(30,41,59,1)] touch-manipulation select-none">
             <ArrowLeft className="w-6 h-6 mr-2" />
             Kembali

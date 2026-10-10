@@ -4,6 +4,7 @@ import type React from "react"
 import { createContext, useState, useEffect, useContext, useCallback } from "react"
 import type { LegacyMode, SessionMode, StatsMode } from "@/lib/words"
 import type { WordMark } from "@/lib/sentences"
+import type { EnglishProgress } from "@/lib/english/progress"
 
 // Define interfaces for data structures
 export interface CardResult {
@@ -39,6 +40,7 @@ export interface Profile {
   name: string
   results: GameResult[]
   letterStats: AllLetterStats
+  english?: EnglishProgress // English reading progress, kept separate from the Malay records
 }
 
 interface ProfileContextType {
@@ -51,6 +53,7 @@ interface ProfileContextType {
   deleteProfile: (id: string) => void
   updateCurrentProfileStats: (newResults: GameResult[], newLetterStats: AllLetterStats) => void
   clearCurrentProfileRecords: () => void
+  updateCurrentProfileEnglish: (english: EnglishProgress | undefined) => void
 }
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined)
@@ -145,6 +148,13 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentProfileId])
 
+  const updateCurrentProfileEnglish = useCallback(
+    (english: EnglishProgress | undefined) => {
+      setProfiles((prevProfiles) => prevProfiles.map((p) => (p.id === currentProfileId ? { ...p, english } : p)))
+    },
+    [currentProfileId],
+  )
+
   const value = {
     loaded,
     profiles,
@@ -155,6 +165,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     deleteProfile,
     updateCurrentProfileStats,
     clearCurrentProfileRecords,
+    updateCurrentProfileEnglish,
   }
 
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>
