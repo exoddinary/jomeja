@@ -1,0 +1,18 @@
+... shell ...
+
+I've made the requested changes:
+
+1. **Moved Statistics Button**: The "📊 Statistik Huruf" button is now moved out of the "Sedia untuk Bermain" card and placed as a separate, full-width button below it that matches the card width.
+
+2. **Updated App Metadata**: I've updated the layout.tsx with proper metadata for your Bahasa Melayu flashcard app:
+   - Title: "Suku Kata - Bahasa Melayu Flashcard"
+   - Description: Comprehensive description in both Malay and English
+   - Keywords: Relevant educational keywords
+   - Theme colors: Matching your app's rose theme
+   - Open Graph and Twitter meta tags for social sharing
+
+3. **Created App Icon**: I've added a custom favicon.ico file with a simple, clean design featuring the letter "S" (for Suku Kata) in a modern style that matches your app's aesthetic.
+
+4. **Added PWA Manifest**: Created a manifest.json file to make your app installable as a Progressive Web App with proper icons and branding.
+
+The statistics button now has proper spacing and visual hierarchy, appearing as a prominent call-to-action below the main game card. The app metadata will make it look professional when shared or bookmarked, and the custom icon gives it a unique identity.

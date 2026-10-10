@@ -1,0 +1,36 @@
+{
+  "name": "Jom Eja - Aplikasi Kad Imbas Bahasa Melayu",
+  "short_name": "Jom Eja",
+  "description": "Aplikasi pembelajaran interaktif untuk menguasai suku kata Bahasa Melayu",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fda4af",
+  "theme_color": "#fda4af",
+  "orientation": "portrait",
+  "scope": "/",
+  "lang": "ms",
+  "categories": ["education", "games"],
+  "icons": [
+    {
+      "src": "/images/tab-web.png",
+      "sizes": "32x32",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/chrome-preview.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/images/chrome-preview.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Jom Eja - Aplikasi Pembelajaran Suku Kata"
+    }
+  ]
+}

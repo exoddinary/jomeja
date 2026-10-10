@@ -1,0 +1,225 @@
+# PANDUAN LENGKAP JOM EJA - APLIKASI SUKU KATA BAHASA MELAYU
+
+## GAMBARAN KESELURUHAN
+Jom Eja adalah aplikasi kad imbas suku kata Bahasa Melayu yang direka untuk membantu pembelajaran pengecaman suku kata dengan ciri-ciri gamifikasi, penjejakan kemajuan, dan analisis prestasi terperinci.
+
+## HALAMAN UTAMA
+
+### Elemen Utama:
+- **Tajuk**: "Suku Kata" dengan ikon tetapan di kanan atas
+- **Kad Permulaan**: Menunjukkan mod semasa, bilangan perkataan, dan format huruf
+- **Butang Mula**: Butang hijau untuk memulakan sesi latihan
+- **Bahagian Rekod**: Paparan sehingga 5 keputusan sesi terdahulu
+
+### Cara Menggunakan:
+1. Semak tetapan semasa yang dipaparkan di kad permulaan
+2. Klik ikon gear untuk mengubah tetapan jika diperlukan
+3. Klik butang "Mula" untuk memulakan latihan
+4. Lihat rekod prestasi sebelumnya di bahagian bawah
+
+## PANEL TETAPAN
+
+### Pilihan Mod:
+- **Mudah**: Menggunakan vokal a, i, u sahaja
+- **Sukar**: Menggunakan semua vokal a, e, i, o, u
+- **3 Huruf**: Suku kata 3 huruf dengan konsonan akhir (contoh: man, mas, kah)
+- **Vokal Pilihan**: Pilih vokal dan konsonan sendiri
+
+### Pilihan Format Huruf:
+- **Ma (Biasa)**: Huruf pertama besar, selebihnya kecil
+- **ma (kecil)**: Semua huruf kecil
+- **MA (BESAR)**: Semua huruf besar
+
+### Pilihan Bilangan Perkataan:
+- 10 perkataan per sesi
+- 20 perkataan per sesi
+
+### Pilihan Konsonan (untuk mod Mudah, Sukar, dan Vokal Pilihan):
+- Pilih konsonan individu atau "Kesemuanya"
+- Minimum 1 konsonan mesti dipilih
+
+### Pilihan Vokal (untuk mod Vokal Pilihan):
+- Pilih vokal individu atau "Semua Vokal"
+- Minimum 1 vokal mesti dipilih
+
+### Ciri Lain:
+- **Padam Semua Rekod**: Memadamkan semua data yang disimpan
+- **Butang Pengesahan**: Simpan atau batalkan perubahan
+
+## HALAMAN PERMAINAN
+
+### Paparan Maklumat:
+- **Nombor Kad**: Kad semasa daripada jumlah keseluruhan
+- **Pemasa**: Kiraan masa dalam saat untuk kad semasa
+- **Kiraan**: Betul, salah, dan jumlah markah
+- **Streak**: Jawapan betul berturut-turut (jika ada)
+- **Wrong Streak**: Jawapan salah berturut-turut (jika ada)
+
+### Maklumat Tambahan:
+- **Huruf Dipilih**: Senarai konsonan yang dipilih (untuk mod 2 huruf)
+- **Mod 3 Huruf**: Senarai konsonan akhir yang digunakan
+- **Format**: Format huruf yang dipilih
+
+### Kad Suku Kata:
+- Paparan besar suku kata dalam fon tulisan tangan
+- Saiz teks yang besar untuk keterbacaan yang baik
+
+### Butang Jawapan:
+- **❌ Salah**: Untuk jawapan yang salah
+- **✅ Betul**: Untuk jawapan yang betul
+
+### Ciri Khas:
+- **Efek Bunyi**: Bunyi berbeza untuk jawapan betul dan salah
+- **Butang Utama**: Kembali ke menu utama (ikon rumah)
+
+## SISTEM MARKAH
+
+### Pengiraan Markah:
+- **3 Markah**: Masa respons kurang dari 5 saat
+- **2 Markah**: Masa respons 5-10 saat
+- **1 Markah**: Masa respons lebih dari 10 saat
+- **0 Markah**: Jawapan salah
+
+### Sistem Streak:
+- **Streak Betul**: Kiraan jawapan betul berturut-turut
+- **Wrong Streak**: Kiraan jawapan salah berturut-turut
+
+## ANIMASI KARAKTER
+
+### Karakter Gembira (Streak 5):
+- Muncul selepas 5 jawapan betul berturut-turut
+- Hanya muncul sekali per streak
+
+### Karakter Super (Streak 7):
+- Muncul selepas 7 jawapan betul berturut-turut
+- Hanya muncul sekali per streak
+
+### Karakter Teruja (Streak 10):
+- Muncul selepas 10 jawapan betul berturut-turut
+- Hanya muncul sekali per streak
+
+### Karakter Sedih (3 Salah):
+- Muncul selepas 3 jawapan salah berturut-turut
+- Reset wrong streak selepas ditunjukkan
+
+### Ciri Animasi:
+- Animasi meluncur dari bawah dengan kesan bouncy
+- Ditunjukkan selama 2 saat
+- Pemasa untuk kad seterusnya bermula selepas animasi selesai
+
+## HALAMAN KEPUTUSAN
+
+### Kad Ringkasan:
+- **Ikon**: 🏆 (jika 80%+ betul) atau 📊 (prestasi biasa)
+- **Tarikh dan Masa**: Masa sesi selesai
+- **Tempoh**: Jumlah masa yang diambil dalam saat
+- **Kiraan**: Betul/jumlah dan salah
+- **Jumlah Markah**: Jumlah bintang yang diperoleh
+- **Mod**: Mod yang dimainkan
+
+### Keputusan Terperinci:
+- Grid menunjukkan setiap suku kata
+- Masa yang diambil untuk setiap kad
+- Markah yang diperoleh (bintang)
+- Kod warna: hijau untuk betul, merah untuk salah
+
+### Butang Tindakan:
+- **🔄 Main Lagi**: Mula sesi baharu dengan tetapan yang sama
+- **⚙️ Tetapan**: Buka panel tetapan (scroll ke atas)
+- **📊 Statistik Huruf**: Buka halaman analisis prestasi
+
+## HALAMAN STATISTIK
+
+### Carta Konsonan:
+- Carta bar menunjukkan masa respons purata untuk setiap konsonan
+- Kod warna berdasarkan prestasi:
+  - Hijau: Pantas (≤2 saat)
+  - Kuning: Sederhana (2-3.5 saat)
+  - Merah: Perlahan (>3.5 saat)
+- Menunjukkan bilangan kali dicuba
+
+### Carta Vokal:
+- Carta bar menunjukkan masa respons purata untuk setiap vokal
+- Sistem kod warna yang sama seperti konsonan
+- Menunjukkan bilangan kali dicuba
+
+### Statistik Ringkasan:
+- Bilangan konsonan yang telah dicuba
+- Bilangan vokal yang telah dicuba
+- Konsonan terpantas dengan masa
+- Vokal terpantas dengan masa
+
+### Analisis Kelemahan:
+- Menunjukkan huruf yang perlu latihan lebih (>2 saat)
+- Menunjukkan huruf yang sudah mahir (≤2 saat)
+- Fokus pada huruf yang paling perlahan untuk penambahbaikan
+- Panduan untuk latihan yang lebih berkesan
+
+## PENYIMPANAN DATA
+
+### Data yang Disimpan:
+- **Keputusan Sesi**: Sehingga semua sesi yang dimainkan
+- **Statistik Huruf**: Masa kumulatif dan kiraan untuk setiap huruf
+- **Tetapan**: Pilihan mod, format, dan huruf yang dipilih
+
+### Lokasi Penyimpanan:
+- localStorage pelayar (data kekal sehingga dipadamkan)
+- Tiada penyimpanan awan - data tempatan sahaja
+
+### Pengurusan Data:
+- Pilihan "Padam Semua Rekod" dalam tetapan
+- Pengesahan diperlukan sebelum pemadaman
+- Pemadaman adalah kekal dan tidak boleh dibatalkan
+
+## TIPS PENGGUNAAN
+
+### Untuk Pemula:
+1. Mula dengan mod "Mudah" dan 10 perkataan
+2. Gunakan format "Ma (Biasa)" untuk pembelajaran standard
+3. Pilih konsonan yang mudah dahulu (B, M, T)
+
+### Untuk Pengguna Lanjutan:
+1. Gunakan mod "Vokal Pilihan" untuk fokus pada huruf yang mencabar
+2. Tingkatkan kepada 20 perkataan untuk latihan yang lebih panjang
+3. Gunakan statistik untuk mengenal pasti kelemahan
+
+### Untuk Latihan 3 Huruf:
+1. Pastikan sudah mahir dengan suku kata 2 huruf
+2. Fokus pada konsonan akhir yang mudah dahulu
+3. Berlatih dengan format yang berbeza untuk fleksibiliti
+
+## PENYELESAIAN MASALAH
+
+### Jika Bunyi Tidak Berfungsi:
+- Pastikan pelayar membenarkan audio
+- Periksa volume peranti
+- Cuba refresh halaman
+
+### Jika Data Hilang:
+- Data disimpan dalam localStorage pelayar
+- Membersihkan data pelayar akan memadamkan rekod
+- Tiada cara untuk memulihkan data yang telah dipadamkan
+
+### Jika Prestasi Perlahan:
+- Tutup tab pelayar lain
+- Restart aplikasi
+- Periksa sambungan internet (walaupun app berfungsi offline)
+
+## CIRI KEBOLEHCAPAIAN
+
+### Reka Bentuk Mesra Sentuh:
+- Butang besar untuk kemudahan sentuh
+- Jarak yang sesuai antara elemen
+- Maklum balas visual yang jelas
+
+### Sokongan Peranti:
+- Dioptimumkan untuk telefon pintar
+- Berfungsi pada tablet dan desktop
+- Reka bentuk responsif
+
+### Kebolehbacaan:
+- Fon yang besar dan jelas
+- Kontras warna yang tinggi
+- Fon tulisan tangan untuk suku kata
+
+Jom Eja direka untuk menjadikan pembelajaran suku kata Bahasa Melayu menyeronokkan dan berkesan melalui gamifikasi, maklum balas segera, dan analisis prestasi yang terperinci.
